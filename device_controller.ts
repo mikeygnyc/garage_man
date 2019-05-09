@@ -1,15 +1,11 @@
 import winston = require("winston");
 import async from "async";
 import { EventEmitter } from "events";
+import { Door, DoorType, Side } from "./door";
 
 export class DeviceController extends EventEmitter {
     gpio: any;
     logger: winston.Logger;
-    //     pi@GRGE-PI01:~ $ gpio mode 21 down
-    // pi@GRGE-PI01:~ $ gpio mode 22 down
-    // pi@GRGE-PI01:~ $ gpio mode 23 down
-    // pi@GRGE-PI01:~ $ gpio mode 25 down
-    // pi@GRGE-PI01:~ $ gpio mode 27 down
     initPulldown(pin: number) {
         const { exec } = require("child_process");
         var thys = this;
@@ -33,7 +29,12 @@ export class DeviceController extends EventEmitter {
         this.logger = logger;
         let thys = this;
         this.gpio.on("change", this.changedState.bind(this));
-
+        this.leftDoor = new Door(DoorType.OVERHEAD, Side.LEFT, this.logger);
+        this.rightDoor = new Door(DoorType.OVERHEAD, Side.RIGHT, this.logger);
+        this.personDoor = new Door(DoorType.STANDARD, Side.PERSON, this.logger);
+        this.leftDoor.on("state", this.handleDoorStateChange.bind(this));
+        this.rightDoor.on("state", this.handleDoorStateChange.bind(this));
+        this.personDoor.on("state", this.handleDoorStateChange.bind(this));
         async.series([
             function(callback: any) {
                 thys.gpio.setup(thys.left_button, thys.gpio.DIR_OUT, callback);
@@ -199,68 +200,42 @@ export class DeviceController extends EventEmitter {
             );
         }
     }
+    private handleDoorStateChange(door: Door) {
+        this.emit("status", door.side, door.state);
+    }
     private changedState(channel: any, value: any) {
         //this.logger.info("Channel " + channel + " value is now " + value);
         //reed switch true = contacted/closed
-        switch (channel) {
-            case this.left_open:
-                if (this.leftDoorOpenSensorClosed !== value) {
-                    this.lastLeftDoorState = this.LeftDoorState;
-                    this.leftDoorOpenSensorClosed = value;
-                    this.logger.info(
-                        "LEFT door state: " +
-                            DoorState[this.LeftDoorState].toString()
-                    );
-                    this.emit("status", Side.LEFT, this.LeftDoorState);
-                }
-                break;
-            case this.right_open:
-                if (this.rightDoorOpenSensorClosed !== value) {
-                    this.lastRightDoorState = this.RightDoorState;
-                    this.rightDoorOpenSensorClosed = value;
-                    this.logger.info(
-                        "RIGHT door state: " +
-                            DoorState[this.RightDoorState].toString()
-                    );
-                    this.emit("status", Side.RIGHT, this.RightDoorState);
-                }
-                break;
-            case this.left_closed:
-                if (this.leftDoorClosedSensorClosed !== value) {
-                    this.lastLeftDoorState = this.LeftDoorState;
-                    this.leftDoorClosedSensorClosed = value;
-                    this.logger.info(
-                        "LEFT door state: " +
-                            DoorState[this.LeftDoorState].toString()
-                    );
-                    this.emit("status", Side.LEFT, this.LeftDoorState);
-                }
-                break;
-            case this.right_closed:
-                if (this.rightDoorClosedSensorClosed !== value) {
-                    this.lastRightDoorState = this.RightDoorState;
-                    this.rightDoorClosedSensorClosed = value;
-                    this.logger.info(
-                        "RIGHT door state: " +
-                            DoorState[this.RightDoorState].toString()
-                    );
-                    this.emit("status", Side.RIGHT, this.RightDoorState);
-                }
-                break;
-            case this.person_door:
-                if (this.personDoorOpenSensorClosed !== value) {
-                    this.personDoorOpenSensorClosed = value;
-                    this.logger.info(
-                        "PERSON door state: " +
-                            DoorState[this.PersonDoorState].toString()
-                    );
-                    this.emit("status", Side.PERSON, this.PersonDoorState);
-                }
-
-                break;
-        }
+        setTimeout(this.debounce.bind(this), 250, channel, value);
     }
-
+    private debounce(pin: number, origValue: boolean) {
+        var thys = this;
+        this.gpio.read(pin, function(err: any, value: boolean) {
+            if (!err) {
+                if (value===origValue){
+                    switch (pin) {
+                        case thys.left_open:
+                            thys.leftDoor.openSensor = value;
+                            break;
+                        case thys.right_open:
+                            thys.rightDoor.openSensor = value;
+                            break;
+                        case thys.left_closed:
+                            thys.leftDoor.closedSensor = value;
+                            break;
+                        case thys.right_closed:
+                            thys.rightDoor.closedSensor = value;
+                            break;
+                        case thys.person_door:
+                            thys.personDoor.openSensor = value;
+                            break;
+                    }
+                }
+            } else {
+                thys.logger.error("debouncer error: " + err.toString());
+            }
+        });
+    }
     //pins l-cl 23 op-22 r op-27 p-25
     left_button: number = 11; //bcm_17
     right_button: number = 12; //bcm_18
@@ -269,77 +244,8 @@ export class DeviceController extends EventEmitter {
     left_closed: number = 33; //bcm_13-
     right_open: number = 36; //bcm_16
     right_closed: number = 37; //bcm_26
-    get PersonDoorState(): DoorState {
-        let retVal: DoorState = DoorState.UNKNOWN;
-        if (this.personDoorOpenSensorClosed) {
-            retVal = DoorState.CLOSED;
-        } else {
-            retVal = DoorState.OPEN;
-        }
 
-        return retVal;
-    }
-    get LeftDoorState(): DoorState {
-        let retVal: DoorState = DoorState.UNKNOWN;
-        if (this.leftDoorClosedSensorClosed) {
-            if (this.leftDoorOpenSensorClosed) {
-                retVal = DoorState.ERROR;
-            } else {
-                retVal = DoorState.CLOSED;
-            }
-        } else {
-            if (this.leftDoorOpenSensorClosed) {
-                retVal = DoorState.OPEN;
-            } else {
-                if (this.lastLeftDoorState === DoorState.CLOSED) {
-                    retVal = DoorState.OPENING;
-                } else {
-                    retVal = DoorState.CLOSING;
-                }
-            }
-        }
-        return retVal;
-    }
-    private lastLeftDoorState: DoorState = DoorState.UNKNOWN;
-    get RightDoorState(): DoorState {
-        let retVal: DoorState = DoorState.UNKNOWN;
-        if (this.rightDoorClosedSensorClosed) {
-            if (this.rightDoorOpenSensorClosed) {
-                retVal = DoorState.ERROR;
-            } else {
-                retVal = DoorState.CLOSED;
-            }
-        } else {
-            if (this.rightDoorOpenSensorClosed) {
-                retVal = DoorState.OPEN;
-            } else {
-                if (this.lastRightDoorState === DoorState.CLOSED) {
-                    retVal = DoorState.OPENING;
-                } else {
-                    retVal = DoorState.CLOSING;
-                }
-            }
-        }
-        return retVal;
-    }
-    private lastRightDoorState: DoorState = DoorState.UNKNOWN;
-    leftDoorOpenSensorClosed: boolean = false;
-    leftDoorClosedSensorClosed: boolean = false;
-    rightDoorOpenSensorClosed: boolean = false;
-    rightDoorClosedSensorClosed: boolean = false;
-    personDoorOpenSensorClosed: boolean = false;
-}
-
-export enum DoorState {
-    ERROR,
-    UNKNOWN,
-    CLOSED,
-    CLOSING,
-    OPENING,
-    OPEN
-}
-export enum Side {
-    LEFT,
-    RIGHT,
-    PERSON
+    public personDoor: Door;
+    public leftDoor: Door;
+    public rightDoor: Door;
 }

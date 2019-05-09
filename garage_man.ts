@@ -5,9 +5,10 @@ import winston from "winston";
 import logform from "logform";
 import fs from "fs";
 import path from "path";
-import { DeviceController, Side, DoorState } from "./device_controller";
+import { DeviceController } from "./device_controller";
 import * as mqtt from "mqtt";
 import { MqttClient, IClientPublishOptions } from "mqtt";
+import { DoorState, Side } from "./door";
 const { format } = logform;
 const alignedWithColorsAndTime = format.combine(
     format.timestamp(),
@@ -89,17 +90,17 @@ app.get("/getDoorState/:door", (req, res) => {
         let side: string = req.params.door.toString().toLocaleLowerCase();
         switch (side) {
             case "left":
-                state = DoorState[GarageState.LeftDoorState]
+                state = DoorState[GarageState.leftDoor.state]
                     .toString()
                     .toLocaleLowerCase();
                 break;
             case "right":
-                state = DoorState[GarageState.RightDoorState]
+                state = DoorState[GarageState.rightDoor.state]
                     .toString()
                     .toLocaleLowerCase();
                 break;
             case "person":
-                state = DoorState[GarageState.PersonDoorState]
+                state = DoorState[GarageState.personDoor.state]
                     .toString()
                     .toLocaleLowerCase();
                 break;
@@ -114,17 +115,17 @@ app.get("/getDoorState/:door", (req, res) => {
             result: status,
             doors: [
                 {
-                    left: DoorState[GarageState.LeftDoorState]
+                    left: DoorState[GarageState.leftDoor.state]
                         .toString()
                         .toLocaleLowerCase()
                 },
                 {
-                    right: DoorState[GarageState.RightDoorState]
+                    right: DoorState[GarageState.rightDoor.state]
                         .toString()
                         .toLocaleLowerCase()
                 },
                 {
-                    person: DoorState[GarageState.PersonDoorState]
+                    person: DoorState[GarageState.personDoor.state]
                         .toString()
                         .toLocaleLowerCase()
                 }
@@ -141,17 +142,17 @@ app.get("/getDoorState", (req, res) => {
         result: status,
         doors: [
             {
-                left: DoorState[GarageState.LeftDoorState]
+                left: DoorState[GarageState.leftDoor.state]
                     .toString()
                     .toLocaleLowerCase()
             },
             {
-                right: DoorState[GarageState.RightDoorState]
+                right: DoorState[GarageState.rightDoor.state]
                     .toString()
                     .toLocaleLowerCase()
             },
             {
-                person: DoorState[GarageState.PersonDoorState]
+                person: DoorState[GarageState.personDoor.state]
                     .toString()
                     .toLocaleLowerCase()
             }
