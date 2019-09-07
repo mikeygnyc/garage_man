@@ -41,21 +41,21 @@ let left_opts: mqtt.IClientOptions = {};
 left_opts.will = {
     topic: "home/garage/left_door",
     payload: "UNKNOWN",
-    qos: 1,
+    qos: 2,
     retain: true
 };
 let right_opts: mqtt.IClientOptions = {};
 right_opts.will = {
     topic: "home/garage/right_door",
     payload: "UNKNOWN",
-    qos: 1,
+    qos: 2,
     retain: true
 };
 let person_opts: mqtt.IClientOptions = {};
 person_opts.will = {
     topic: "home/garage/person_door",
     payload: "UNKNOWN",
-    qos: 1,
+    qos: 2,
     retain: true
 };
 let left_door_client: MqttClient = mqtt.connect(
