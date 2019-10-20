@@ -19,7 +19,7 @@ const logger = winston.createLogger({
     format: alignedWithColorsAndTime,
     transports: [
         new winston.transports.Console(),
-        new winston.transports.File({ filename: "garage.log" })
+        new winston.transports.File({ filename: "garage.log",  })
     ]
 });
 

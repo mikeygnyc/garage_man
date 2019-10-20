@@ -94,6 +94,7 @@ export class DeviceController extends EventEmitter {
                 ) {
                     if (!err) {
                         thys.changedState(thys.right_open, value);
+                        thys.logger.info(`Right door open sensor init with:  ${value}` );
                     } else {
                         thys.logger.error(err.toString());
                     }
@@ -107,6 +108,7 @@ export class DeviceController extends EventEmitter {
                 ) {
                     if (!err) {
                         thys.changedState(thys.right_closed, value);
+                        thys.logger.info(`Right door closed sensor init with:  ${value}` );
                     } else {
                         thys.logger.error(err.toString());
                     }
@@ -120,6 +122,7 @@ export class DeviceController extends EventEmitter {
                 ) {
                     if (!err) {
                         thys.changedState(thys.left_open, value);
+                        thys.logger.info(`Left door open sensor init with:  ${value}` );
                     } else {
                         thys.logger.error(err.toString());
                     }
@@ -133,6 +136,7 @@ export class DeviceController extends EventEmitter {
                 ) {
                     if (!err) {
                         thys.changedState(thys.left_closed, value);
+                        thys.logger.info(`Left door closed sensor init with:  ${value}` );
                     } else {
                         thys.logger.error(err.toString());
                     }
@@ -146,16 +150,26 @@ export class DeviceController extends EventEmitter {
                 ) {
                     if (!err) {
                         thys.changedState(thys.person_door, value);
+                        thys.logger.info(`Person door init with:  ${value}` );
                     } else {
                         thys.logger.error(err.toString());
                     }
                     callback();
                 });
+            },
+            function(callback:any){
+                setTimeout(thys.ForceStatus.bind(thys),500);
+                callback();
             }
         ]);
 
         this.logger.info("Initialized GPIOs");
         callback();
+    }
+    public ForceStatus(){
+        this.handleDoorStateChange(this.leftDoor);
+        this.handleDoorStateChange(this.rightDoor);
+        this.handleDoorStateChange(this.personDoor);
     }
     public ToggleLeftButton() {
         this.PressButton(Side.LEFT, 2);
