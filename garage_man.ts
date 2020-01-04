@@ -70,6 +70,7 @@ let person_door_client: MqttClient = mqtt.connect(
     "mqtt://mqtt.galesnet.com",
     person_opts
 );
+
 left_door_client.subscribe("home/garage/left_door_ctl");
 left_door_client.on("message", receiveLeftMessage);
 right_door_client.subscribe("home/garage/right_door_ctl");
@@ -216,11 +217,16 @@ function receiveLeftMessage(topic: string, message: Buffer) {
     if (message.toString().toLocaleLowerCase() === "toggle") {
         GarageState.ToggleLeftButton();
         logger.info("Toggling left door button via mqtt");
+        left_door_client.publish(topic,""); 
+        logger.info("Clearing left door queue");
     }
+    
 }
 function receiveRightMessage(topic: string, message: Buffer) {
     if (message.toString().toLocaleLowerCase() === "toggle") {
         GarageState.ToggleRightButton();
         logger.info("Toggling right door button via mqtt");
+        right_door_client.publish(topic,""); 
+        logger.info("Clearing right door queue");
     }
 }
