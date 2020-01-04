@@ -37,43 +37,53 @@ const GarageState: DeviceController = new DeviceController(
     function() {}
 );
 GarageState.on("status", garageStatusChanged);
+const leftCtlTopic:string="home/garage/left_door_ctl";
+const rightCtlTopic:string="home/garage/right_door_ctl";
+const mqttBroker:string= "mqtt://mqtt.galesnet.com";
+const leftDoorStatusTopic:string="home/garage/left_door";
+const rightDoorStatusTopic:string="home/garage/right_door";
+const personDoorStatusTopic:string="home/garage/person_door";
 let left_opts: mqtt.IClientOptions = {};
 left_opts.will = {
-    topic: "home/garage/left_door",
+    topic: leftDoorStatusTopic,
     payload: "UNKNOWN",
     qos: 2,
     retain: true
 };
 let right_opts: mqtt.IClientOptions = {};
 right_opts.will = {
-    topic: "home/garage/right_door",
+    topic: rightDoorStatusTopic,
     payload: "UNKNOWN",
     qos: 2,
     retain: true
 };
 let person_opts: mqtt.IClientOptions = {};
 person_opts.will = {
-    topic: "home/garage/person_door",
+    topic: personDoorStatusTopic,
     payload: "UNKNOWN",
     qos: 2,
     retain: true
 };
+
 let left_door_client: MqttClient = mqtt.connect(
-    "mqtt://mqtt.galesnet.com",
+    mqttBroker,
     left_opts
 );
 let right_door_client: MqttClient = mqtt.connect(
-    "mqtt://mqtt.galesnet.com",
+    mqttBroker,
     right_opts
 );
 let person_door_client: MqttClient = mqtt.connect(
-    "mqtt://mqtt.galesnet.com",
+    mqttBroker,
     person_opts
 );
 
-left_door_client.subscribe("home/garage/left_door_ctl");
+left_door_client.subscribe(leftCtlTopic);
+clearLeftControlQueue(leftCtlTopic)
 left_door_client.on("message", receiveLeftMessage);
-right_door_client.subscribe("home/garage/right_door_ctl");
+
+right_door_client.subscribe(rightCtlTopic);
+clearRightControlQueue(rightCtlTopic)
 right_door_client.on("message", receiveRightMessage);
 
 app.listen(3000, () => logger.info(`Garage control listening on port 3000`));
@@ -192,21 +202,21 @@ function garageStatusChanged(side: Side, state: DoorState) {
     switch (side) {
         case Side.LEFT:
             left_door_client.publish(
-                "home/garage/left_door",
+                leftDoorStatusTopic,
                 DoorState[state].toString(),
                 opts
             );
             break;
         case Side.RIGHT:
             right_door_client.publish(
-                "home/garage/right_door",
+                rightDoorStatusTopic,
                 DoorState[state].toString(),
                 opts
             );
             break;
         case Side.PERSON:
             person_door_client.publish(
-                "home/garage/person_door",
+                personDoorStatusTopic,
                 DoorState[state].toString(),
                 opts
             );
@@ -217,16 +227,24 @@ function receiveLeftMessage(topic: string, message: Buffer) {
     if (message.toString().toLocaleLowerCase() === "toggle") {
         GarageState.ToggleLeftButton();
         logger.info("Toggling left door button via mqtt");
-        left_door_client.publish(topic,""); 
-        logger.info("Clearing left door queue");
+        clearLeftControlQueue(topic);
     }
     
 }
+function clearLeftControlQueue(topic: string) {
+    left_door_client.publish(topic, "");
+    logger.info("Clearing left door queue");
+}
+
 function receiveRightMessage(topic: string, message: Buffer) {
     if (message.toString().toLocaleLowerCase() === "toggle") {
         GarageState.ToggleRightButton();
         logger.info("Toggling right door button via mqtt");
-        right_door_client.publish(topic,""); 
-        logger.info("Clearing right door queue");
+        clearRightControlQueue(topic);
     }
 }
+function clearRightControlQueue(topic: string) {
+    right_door_client.publish(topic, "");
+    logger.info("Clearing right door queue");
+}
+
