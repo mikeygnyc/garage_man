@@ -19,7 +19,7 @@ const logger = winston.createLogger({
     format: alignedWithColorsAndTime,
     transports: [
         new winston.transports.Console(),
-        new winston.transports.File({ filename: "garage.log",  })
+        new winston.transports.File({ filename: "garage.log", maxsize: 1024*1024*1024  })
     ]
 });
 
@@ -232,7 +232,11 @@ function receiveLeftMessage(topic: string, message: Buffer) {
     
 }
 function clearLeftControlQueue(topic: string) {
-    left_door_client.publish(topic, "");
+    let opts: IClientPublishOptions = {
+        retain: true,
+        qos: 1
+    };
+    left_door_client.publish(topic, "",opts);
     logger.info("Clearing left door queue");
 }
 
@@ -244,7 +248,11 @@ function receiveRightMessage(topic: string, message: Buffer) {
     }
 }
 function clearRightControlQueue(topic: string) {
-    right_door_client.publish(topic, "");
+    let opts: IClientPublishOptions = {
+        retain: true,
+        qos: 1
+    };
+    right_door_client.publish(topic, "",opts);
     logger.info("Clearing right door queue");
 }
 
