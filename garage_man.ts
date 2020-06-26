@@ -90,6 +90,7 @@ app.listen(3000, () => logger.info(`Garage control listening on port 3000`));
 app.get("/", (req, res) => {
     return res.send({
         result: "OK",
+        version: "1.0.1",
         serverTime: new Date(Date.now()).toLocaleDateString()
     });
 });
