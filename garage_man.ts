@@ -37,8 +37,8 @@ const GarageState: DeviceController = new DeviceController(
     function() {}
 );
 GarageState.on("status", garageStatusChanged);
-const leftCtlTopic:string="home/garage/left_door_ctl";
-const rightCtlTopic:string="home/garage/right_door_ctl";
+// const leftCtlTopic:string="home/garage/left_door_ctl";
+// const rightCtlTopic:string="home/garage/right_door_ctl";
 const mqttBroker:string= "mqtt://mqtt.galesnet.com";
 const leftDoorStatusTopic:string="home/garage/left_door";
 const rightDoorStatusTopic:string="home/garage/right_door";
@@ -78,13 +78,13 @@ let person_door_client: MqttClient = mqtt.connect(
     person_opts
 );
 
-left_door_client.subscribe(leftCtlTopic);
-clearLeftControlQueue(leftCtlTopic)
-left_door_client.on("message", receiveLeftMessage);
+// left_door_client.subscribe(leftCtlTopic);
+// clearLeftControlQueue(leftCtlTopic)
+// left_door_client.on("message", receiveLeftMessage);
 
-right_door_client.subscribe(rightCtlTopic);
-clearRightControlQueue(rightCtlTopic)
-right_door_client.on("message", receiveRightMessage);
+// right_door_client.subscribe(rightCtlTopic);
+// clearRightControlQueue(rightCtlTopic)
+// right_door_client.on("message", receiveRightMessage);
 
 app.listen(3000, () => logger.info(`Garage control listening on port 3000`));
 app.get("/", (req, res) => {
@@ -223,36 +223,36 @@ function garageStatusChanged(side: Side, state: DoorState) {
             break;
     }
 }
-function receiveLeftMessage(topic: string, message: Buffer) {
-    if (message.toString().toLocaleLowerCase() === "toggle") {
-        GarageState.ToggleLeftButton();
-        logger.info("Toggling left door button via mqtt");
-        clearLeftControlQueue(topic);
-    }
+// function receiveLeftMessage(topic: string, message: Buffer) {
+//     if (message.toString().toLocaleLowerCase() === "toggle") {
+//         GarageState.ToggleLeftButton();
+//         logger.info("Toggling left door button via mqtt");
+//         clearLeftControlQueue(topic);
+//     }
     
-}
-function clearLeftControlQueue(topic: string) {
-    let opts: IClientPublishOptions = {
-        retain: true,
-        qos: 1
-    };
-    left_door_client.publish(topic, "",opts);
-    logger.info("Clearing left door queue");
-}
+// }
+// function clearLeftControlQueue(topic: string) {
+//     let opts: IClientPublishOptions = {
+//         retain: true,
+//         qos: 1
+//     };
+//     left_door_client.publish(topic, "",opts);
+//     logger.info("Clearing left door queue");
+// }
 
-function receiveRightMessage(topic: string, message: Buffer) {
-    if (message.toString().toLocaleLowerCase() === "toggle") {
-        GarageState.ToggleRightButton();
-        logger.info("Toggling right door button via mqtt");
-        clearRightControlQueue(topic);
-    }
-}
-function clearRightControlQueue(topic: string) {
-    let opts: IClientPublishOptions = {
-        retain: true,
-        qos: 1
-    };
-    right_door_client.publish(topic, "",opts);
-    logger.info("Clearing right door queue");
-}
+// function receiveRightMessage(topic: string, message: Buffer) {
+//     if (message.toString().toLocaleLowerCase() === "toggle") {
+//         GarageState.ToggleRightButton();
+//         logger.info("Toggling right door button via mqtt");
+//         clearRightControlQueue(topic);
+//     }
+// }
+// function clearRightControlQueue(topic: string) {
+//     let opts: IClientPublishOptions = {
+//         retain: true,
+//         qos: 1
+//     };
+//     right_door_client.publish(topic, "",opts);
+//     logger.info("Clearing right door queue");
+// }
 
